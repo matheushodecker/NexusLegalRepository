@@ -84,6 +84,9 @@ public class PortfolioController {
 
     @GetMapping("/search")
     public List<Map<String, Object>> search(@RequestParam String q, Authentication auth) {
+        if (q.length() > 100)
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Busca muito longa");
         return service.search(q, auth);
     }
 }

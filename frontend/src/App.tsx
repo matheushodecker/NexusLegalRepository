@@ -228,14 +228,17 @@ function Workspace({
       setNotice("Digite um nome ou CNPJ para buscar.");
       return;
     }
-    const r = await fetch(`/api/search?q=${encodeURIComponent(term)}`, {
-      headers,
-    });
-    if (r.ok) {
+    try {
+      const r = await fetch(`/api/search?q=${encodeURIComponent(term)}`, {
+        headers,
+      });
+      if (!r.ok) throw new Error(String(r.status));
       setNotice("");
       setData({ ...data, search: await r.json() });
       setSearched(term);
       setView("search");
+    } catch {
+      setNotice("Não foi possível buscar agora, tente de novo.");
     }
   }
   const page = names[view];
@@ -364,7 +367,8 @@ function Workspace({
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Buscar empresas, processos..."
+                placeholder="Buscar empresas, pessoas, CNPJ..."
+                maxLength={100}
               />
             </form>
             <button className="round" disabled title="Em breve">

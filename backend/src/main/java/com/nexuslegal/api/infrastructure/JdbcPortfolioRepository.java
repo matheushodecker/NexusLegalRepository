@@ -90,11 +90,10 @@ public class JdbcPortfolioRepository implements PortfolioRepository {
     }
 
     public List<Map<String, Object>> search(String term) {
-        String sql = "SELECT id,legal_name AS name,tax_id,segment,status FROM companies WHERE legal_name ILIKE '%"
-                + term + "%' OR tax_id LIKE '%" + term
-                + "%' UNION ALL SELECT id,full_name AS name,document,'Pessoa física' AS segment,status FROM individual_clients WHERE full_name ILIKE '%"
-                + term + "%'";
-        return jdbc.queryForList(sql);
+        String like = "%" + term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+        return jdbc.queryForList(
+                "SELECT id,legal_name AS name,tax_id,segment,status FROM companies WHERE legal_name ILIKE ? OR tax_id LIKE ? UNION ALL SELECT id,full_name AS name,document,'Pessoa física' AS segment,status FROM individual_clients WHERE full_name ILIKE ?",
+                like, like, like);
     }
 
     public Map<String, Object> company(long id) {

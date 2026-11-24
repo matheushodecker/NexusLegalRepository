@@ -962,7 +962,9 @@ function DocumentForm({
       setError(
         r.status === 403
           ? "Seu perfil não pode cadastrar documentos."
-          : "Não foi possível cadastrar agora. Nada foi salvo.",
+          : r.status === 400
+            ? "Confira os dados: algum campo está inválido. Nada foi salvo."
+            : "Não foi possível cadastrar agora. Nada foi salvo.",
       );
       setStep("edit");
     } catch {
@@ -998,7 +1000,12 @@ function DocumentForm({
           </label>
           <label>
             Conteúdo
-            <textarea value={f.content} onChange={set("content")} rows={3} />
+            <textarea
+              value={f.content}
+              onChange={set("content")}
+              rows={3}
+              maxLength={20000}
+            />
           </label>
           {error && <div className="login-error">{error}</div>}
           <div className="form-actions">

@@ -25,7 +25,11 @@ public interface PortfolioRepository {
 
     Map<String, Object> company(long id);
 
-    void updateMatter(long id, String status);
+    int updateMatter(long id, String status);
+
+    boolean companyExists(long id);
+
+    Optional<Long> matterCompany(long matterId);
 
     void insertDocument(long orgId, Long matterId, Long companyId, String title, String category, String content,
             String user);

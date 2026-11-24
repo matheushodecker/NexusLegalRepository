@@ -102,8 +102,17 @@ public class JdbcPortfolioRepository implements PortfolioRepository {
                 id);
     }
 
-    public void updateMatter(long id, String status) {
-        jdbc.update("UPDATE matters SET status=? WHERE id=?", status, id);
+    public int updateMatter(long id, String status) {
+        return jdbc.update("UPDATE matters SET status=? WHERE id=?", status, id);
+    }
+
+    public boolean companyExists(long id) {
+        return jdbc.queryForObject("SELECT count(*) FROM companies WHERE id=?", Long.class, id) > 0;
+    }
+
+    public Optional<Long> matterCompany(long matterId) {
+        return jdbc.query("SELECT CASE WHEN client_type='COMPANY' THEN client_id ELSE -1 END FROM matters WHERE id=?",
+                (rs, i) -> rs.getLong(1), matterId).stream().findFirst();
     }
 
     public void insertDocument(long orgId, Long matterId, Long companyId, String title, String category, String content,

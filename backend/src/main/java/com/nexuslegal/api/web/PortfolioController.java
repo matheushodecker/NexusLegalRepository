@@ -20,8 +20,8 @@ public class PortfolioController {
         this.service = service;
     }
 
-    public record DocumentRequest(Long matterId, Long companyId, @NotBlank String title, @NotBlank String category,
-            @NotBlank String content) {
+    public record DocumentRequest(Long matterId, Long companyId, @NotBlank @Size(max = 220) String title,
+            @NotBlank @Size(max = 70) String category, @NotBlank @Size(max = 20000) String content) {
     }
 
     @GetMapping("/me")

@@ -78,11 +78,24 @@ public class PortfolioService {
         }
     }
 
+    private static final Set<String> MATTER_STATUSES = Set.of("ACTIVE", "IN_REVIEW", "HEARING", "PENDING", "CLOSED");
+
     public void updateMatter(long id, String status) {
-        repo.updateMatter(id, status);
+        if (!MATTER_STATUSES.contains(status))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status inválido");
+        if (repo.updateMatter(id, status) == 0)
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Processo não encontrado");
     }
 
     public void insertDocument(Long matter, Long company, String title, String category, String content, String user) {
+        if (company != null && !repo.companyExists(company))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Empresa não encontrada");
+        if (matter != null) {
+            Long matterCompany = repo.matterCompany(matter)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Processo não encontrado"));
+            if (!Objects.equals(matterCompany == -1L ? null : matterCompany, company))
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O processo é de outro cliente");
+        }
         repo.insertDocument(1L, matter, company, title, category, content, user);
     }
 }

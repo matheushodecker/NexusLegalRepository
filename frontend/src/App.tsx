@@ -19,6 +19,13 @@ const roleNames: Record<string, string> = {
   AUDITOR: "Auditoria",
 };
 type Session = { u: string; p: string; name: string; role: string };
+const isClient = (role: string) => role.startsWith("CLIENT_");
+function canSee(view: View, role: string) {
+  if (view === "audit") return role === "PARTNER" || role === "AUDITOR";
+  if (view === "access") return role === "PARTNER";
+  if (view === "tasks") return !isClient(role);
+  return true;
+}
 const basic = (u: string, p: string) => ({
   Authorization: `Basic ${btoa(unescape(encodeURIComponent(`${u}:${p}`)))}`,
 });
@@ -123,7 +130,8 @@ function Workspace({
   session: Session;
   setSession: (s: Session | null) => void;
 }) {
-  const user = session.u;
+  const user = session.u,
+    role = session.role;
   const [view, setView] = useState<View>("home"),
     [data, setData] = useState<Record<string, any[]>>({}),
     [dash, setDash] = useState<Row>({}),
@@ -150,7 +158,7 @@ function Workspace({
       "documents",
       "tasks",
       "audit",
-    ];
+    ].filter((x) => x !== "audit" || canSee("audit", role));
     const [d, ...rs] = await Promise.all([
       fetch("/api/dashboard", { headers }),
       ...endpoints.map((x) => fetch(`/api/${x}`, { headers })),
@@ -228,25 +236,33 @@ function Workspace({
             active={view === "documents"}
             onClick={() => setView("documents")}
           />
-          <Nav
-            icon="◷"
-            label="Agenda"
-            active={view === "tasks"}
-            onClick={() => setView("tasks")}
-          />
-          <div className="nav-title second">GOVERNANÇA</div>
-          <Nav
-            icon="◉"
-            label="Auditoria"
-            active={view === "audit"}
-            onClick={() => setView("audit")}
-          />
-          <Nav
-            icon="♧"
-            label="Usuários e acessos"
-            active={view === "access"}
-            onClick={() => setView("access")}
-          />
+          {canSee("tasks", role) && (
+            <Nav
+              icon="◷"
+              label="Agenda"
+              active={view === "tasks"}
+              onClick={() => setView("tasks")}
+            />
+          )}
+          {(canSee("audit", role) || canSee("access", role)) && (
+            <div className="nav-title second">GOVERNANÇA</div>
+          )}
+          {canSee("audit", role) && (
+            <Nav
+              icon="◉"
+              label="Auditoria"
+              active={view === "audit"}
+              onClick={() => setView("audit")}
+            />
+          )}
+          {canSee("access", role) && (
+            <Nav
+              icon="♧"
+              label="Usuários e acessos"
+              active={view === "access"}
+              onClick={() => setView("access")}
+            />
+          )}
         </nav>
         <div className="side-bottom">
           <div className="help">
@@ -299,6 +315,11 @@ function Workspace({
         </header>
         {loading ? (
           <div className="loading">Preparando seu workspace...</div>
+        ) : !canSee(view, role) ? (
+          <section className="panel denied" role="alert">
+            <h3>Acesso não permitido</h3>
+            <p>O seu perfil não tem permissão para abrir esta tela.</p>
+          </section>
         ) : view === "home" ? (
           <Home
             dash={dash}

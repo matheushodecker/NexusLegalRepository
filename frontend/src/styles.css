@@ -1063,3 +1063,16 @@ td small {
     border-radius: 10px;
     padding: 10px 12px
 }
+.denied {
+    margin-top: 24px;
+    border-left: 4px solid #d64545
+}
+
+.denied h3 {
+    margin: 0 0 6px
+}
+
+.denied p {
+    margin: 0;
+    color: #6b7a90
+}

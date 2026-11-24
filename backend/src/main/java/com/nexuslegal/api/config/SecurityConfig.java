@@ -1,6 +1,7 @@
 package com.nexuslegal.api.config;
 
 import org.springframework.context.annotation.*;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.core.userdetails.User;
@@ -32,8 +33,18 @@ public class SecurityConfig {
                     res.setContentType("application/json");
                     res.getWriter().write("{\"error\":\"Não autenticado\"}");
                 }))
-                .authorizeHttpRequests(a -> a.requestMatchers("/", "/api", "/swagger-ui/**", "/v3/api-docs/**",
-                        "/api/lab/**", "/api/debug/**").permitAll().anyRequest().authenticated());
+                .exceptionHandling(e -> e.accessDeniedHandler((req, res, ex) -> {
+                    res.setStatus(403);
+                    res.setContentType("application/json");
+                    res.getWriter().write("{\"error\":\"Acesso não permitido\"}");
+                }))
+                .authorizeHttpRequests(a -> a.requestMatchers("/", "/api", "/error", "/swagger-ui/**",
+                        "/v3/api-docs/**", "/api/lab/**", "/api/debug/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/audit").hasAnyRole("PARTNER", "AUDITOR")
+                        .requestMatchers(HttpMethod.PUT, "/api/matters/**").hasAnyRole("PARTNER", "LAWYER")
+                        .requestMatchers(HttpMethod.POST, "/api/documents")
+                        .hasAnyRole("PARTNER", "LAWYER", "ACCOUNTANT", "ASSISTANT")
+                        .anyRequest().authenticated());
         return http.build();
     }
 

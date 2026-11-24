@@ -20,6 +20,7 @@ Este fork faz parte da Atividade 004 (SENAI/SC – Tecnologias da Segurança da 
 | ANA-08 | Busca com apóstrofo ("D'Ávila") não respondia | Consulta com parâmetros, sem montar SQL com o texto digitado | `fix(ANA-08)` |
 | Extra | Rotas de depuração abertas sem login (`/api/debug`, `/api/lab`) | Rotas removidas | `fix: remover rotas de depuração` |
 | Revisão | Problemas achados ao revisar as correções: CSV exportado aceitava fórmulas, painel do cliente citava outra empresa, erros 401/403 com acento quebrado | Texto do CSV neutralizado, painel do cliente sem radar/agenda internos, JSON em UTF-8 | `fix: corrigir problemas encontrados na revisão` |
+| Revisão | Abrir uma empresa que não existe (`/api/companies/999`) dava erro 500 | Resposta 404 "Empresa não encontrada"; cliente continua recebendo 403 | `fix: responder 404 para empresa inexistente` |
 
 O relatório completo, com procedimento, evidências, consequências e prioridades de cada registro, está em [`docs/relatorio-seguranca-nexuslegal.docx`](docs/relatorio-seguranca-nexuslegal.docx). Os prints estão em [`docs/prints/antes`](docs/prints/antes) (sistema original) e [`docs/prints/depois`](docs/prints/depois) (sistema corrigido).
 

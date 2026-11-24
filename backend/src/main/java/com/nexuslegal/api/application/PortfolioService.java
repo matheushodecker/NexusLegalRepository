@@ -1,6 +1,7 @@
 package com.nexuslegal.api.application;
 
 import com.nexuslegal.api.domain.PortfolioRepository;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -70,7 +71,11 @@ public class PortfolioService {
         List<Long> ids = scope(auth);
         if (ids != null && !ids.contains(id))
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso não permitido");
-        return repo.company(id);
+        try {
+            return repo.company(id);
+        } catch (EmptyResultDataAccessException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Empresa não encontrada");
+        }
     }
 
     public void updateMatter(long id, String status) {

@@ -397,6 +397,7 @@ function Workspace({
             data={data}
             goto={setView}
             name={session.name.split(" ")[0]}
+            client={isClient(role)}
           />
         ) : (
           <Module
@@ -446,11 +447,13 @@ function Home({
   data,
   goto,
   name,
+  client,
 }: {
   dash: Row;
   data: Record<string, any[]>;
   goto: (v: View) => void;
   name: string;
+  client: boolean;
 }) {
   const matters = data.matters || [],
     obligations = data.obligations || [],
@@ -488,12 +491,14 @@ function Home({
           trend="3 vencem esta semana"
           tone="orange"
         />
-        <Metric
-          label="Tarefas em aberto"
-          value={dash.openTasks || 0}
-          trend="2 prioritárias"
-          tone="green"
-        />
+        {!client && (
+          <Metric
+            label="Tarefas em aberto"
+            value={dash.openTasks || 0}
+            trend="2 prioritárias"
+            tone="green"
+          />
+        )}
       </section>
       <div className="dashboard-grid">
         <section className="panel wide">
@@ -537,6 +542,7 @@ function Home({
             </table>
           </div>
         </section>
+        {!client && (
         <section className="panel">
           <PanelHead
             eyebrow="AGENDA"
@@ -565,6 +571,7 @@ function Home({
             </div>
           ))}
         </section>
+        )}
       </div>
       <div className="dashboard-grid lower">
         <section className="panel">
@@ -589,6 +596,7 @@ function Home({
             </div>
           ))}
         </section>
+        {!client && (
         <section className="panel insight">
           <span className="eyebrow">RADAR DO ESCRITÓRIO</span>
           <h3>
@@ -605,6 +613,7 @@ function Home({
             <span>3</span>
           </div>
         </section>
+        )}
       </div>
     </>
   );
@@ -778,7 +787,11 @@ function Module({
   const canAdd =
     view === "documents" && !isClient(role) && role !== "AUDITOR";
   function exportCsv() {
-    const esc = (v: any) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const esc = (v: any) => {
+      let s = String(v ?? "");
+      if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+      return `"${s.replace(/"/g, '""')}"`;
+    };
     const lines = [
       c.cols.map((x: any) => esc(x[1])).join(";"),
       ...rows.map((r) => c.cols.map((x: any) => esc(r[x[0]])).join(";")),

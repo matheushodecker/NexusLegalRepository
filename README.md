@@ -19,6 +19,7 @@ Este fork faz parte da Atividade 004 (SENAI/SC – Tecnologias da Segurança da 
 | ANA-07 | Não existia opção de sair | Botão Sair e saída automática após 15 minutos parado | `fix(ANA-07)` |
 | ANA-08 | Busca com apóstrofo ("D'Ávila") não respondia | Consulta com parâmetros, sem montar SQL com o texto digitado | `fix(ANA-08)` |
 | Extra | Rotas de depuração abertas sem login (`/api/debug`, `/api/lab`) | Rotas removidas | `fix: remover rotas de depuração` |
+| Revisão | Problemas achados ao revisar as correções: CSV exportado aceitava fórmulas, painel do cliente citava outra empresa, erros 401/403 com acento quebrado | Texto do CSV neutralizado, painel do cliente sem radar/agenda internos, JSON em UTF-8 | `fix: corrigir problemas encontrados na revisão` |
 
 O relatório completo, com procedimento, evidências, consequências e prioridades de cada registro, está em [`docs/relatorio-seguranca-nexuslegal.docx`](docs/relatorio-seguranca-nexuslegal.docx). Os prints estão em [`docs/prints/antes`](docs/prints/antes) (sistema original) e [`docs/prints/depois`](docs/prints/depois) (sistema corrigido).
 

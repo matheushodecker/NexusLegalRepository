@@ -30,12 +30,12 @@ public class SecurityConfig {
         http.csrf(c -> c.disable()).cors(Customizer.withDefaults())
                 .httpBasic(b -> b.authenticationEntryPoint((req, res, ex) -> {
                     res.setStatus(401);
-                    res.setContentType("application/json");
+                    res.setContentType("application/json;charset=UTF-8");
                     res.getWriter().write("{\"error\":\"Não autenticado\"}");
                 }))
                 .exceptionHandling(e -> e.accessDeniedHandler((req, res, ex) -> {
                     res.setStatus(403);
-                    res.setContentType("application/json");
+                    res.setContentType("application/json;charset=UTF-8");
                     res.getWriter().write("{\"error\":\"Acesso não permitido\"}");
                 }))
                 .authorizeHttpRequests(a -> a.requestMatchers("/", "/api", "/error", "/swagger-ui/**",

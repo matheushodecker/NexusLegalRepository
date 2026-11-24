@@ -4,6 +4,26 @@ Plataforma integrada para escritórios que atuam com serviços jurídicos, cont�
 
 Essa aplicação foi desenvolvida de forma didática para práticas de segurança. Teste educacional.
 
+## Análise de segurança e correções
+
+Este fork faz parte da Atividade 004 (SENAI/SC – Tecnologias da Segurança da Informação), feita por Matheus Hodecker e Marcelo Momm. Analisamos o sistema pela interface, registramos 8 problemas (ANA-01 a ANA-08) e corrigimos cada um em um commit próprio, na ordem abaixo. Cada commit mantém as correções anteriores.
+
+| Código | Problema encontrado na interface | Correção | Commit |
+|---|---|---|---|
+| ANA-01 | O sistema abria direto no painel como a Sócia, sem pedir login | Tela de login; o servidor confere usuário e senha (`GET /api/me`) | `fix(ANA-01)` |
+| ANA-02 | Uma lista no menu trocava de usuário sem senha | Lista removida e senhas retiradas do código da página | `fix(ANA-02)` |
+| ANA-03 | Cliente via CNPJ, receita, processos e documentos de outras empresas | Servidor filtra os dados pela empresa do usuário | `fix(ANA-03)` |
+| ANA-04 | Cliente abria Auditoria e Usuários e acessos | Menu por perfil e bloqueio no servidor (403) | `fix(ANA-04)` |
+| ANA-05 | Busca dizia "concluída" mas mostrava a lista de sempre | Tela de resultados ("N resultados para…" ou "Nenhum resultado") | `fix(ANA-05)` |
+| ANA-06 | Botões mostravam mensagens de sucesso sem fazer nada | Cadastro de documento com conferência; botões sem função desativados | `fix(ANA-06)` |
+| ANA-07 | Não existia opção de sair | Botão Sair e saída automática após 15 minutos parado | `fix(ANA-07)` |
+| ANA-08 | Busca com apóstrofo ("D'Ávila") não respondia | Consulta com parâmetros, sem montar SQL com o texto digitado | `fix(ANA-08)` |
+| Extra | Rotas de depuração abertas sem login (`/api/debug`, `/api/lab`) | Rotas removidas | `fix: remover rotas de depuração` |
+
+O relatório completo, com procedimento, evidências, consequências e prioridades de cada registro, está em [`docs/relatorio-seguranca-nexuslegal.docx`](docs/relatorio-seguranca-nexuslegal.docx). Os prints estão em [`docs/prints/antes`](docs/prints/antes) (sistema original) e [`docs/prints/depois`](docs/prints/depois) (sistema corrigido).
+
+Todas as versões foram testadas no Docker com o banco zerado: cada uma passou nos testes da própria correção e das anteriores.
+
 ## Executar
 
 Na raiz do projeto:
@@ -39,7 +59,7 @@ docker compose up --build
 | beta_viewer | beta123 | Leitura da Beta Foods |
 | auditor | auditor123 | Auditoria |
 
-A API usa Basic Auth. A aplicação web possui um seletor de usuário no menu lateral para alternar o contexto visual do workspace.
+A API usa Basic Auth. A aplicação web pede usuário e senha na tela de login; para usar outro perfil, clique em "Sair" e entre com a conta desejada.
 
 ## DBeaver
 
@@ -71,6 +91,7 @@ O papel operacional criado pelas migrations é `nexuslegal_app`, com senha `nexu
 ## Rotas principais
 
 ```text
+GET /api/me
 GET /api/dashboard
 GET /api/companies
 GET /api/companies/{id}
@@ -103,6 +124,7 @@ Exemplo de documento:
 backend/          Spring Boot, JDBC, Security e Flyway
 frontend/         React, Vite e Nginx
 notifications/    serviço HTTP auxiliar
+docs/             relatório da análise de segurança e prints
 docker-compose.yml
 ```
 

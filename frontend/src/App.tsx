@@ -9,14 +9,14 @@ type View =
   | "audit"
   | "access";
 type Row = Record<string, any>;
-const users = {
-  partner: "partner123",
-  lawyer: "lawyer123",
-  accountant: "accountant123",
-  assistant: "assistant123",
-  alfa_admin: "alfa123",
-  beta_viewer: "beta123",
-  auditor: "auditor123",
+const roleNames: Record<string, string> = {
+  PARTNER: "Sócia administradora",
+  LAWYER: "Advogado",
+  ACCOUNTANT: "Contadora",
+  ASSISTANT: "Assistente",
+  CLIENT_ADMIN: "Cliente · administrador",
+  CLIENT_VIEWER: "Cliente · leitura",
+  AUDITOR: "Auditoria",
 };
 type Session = { u: string; p: string; name: string; role: string };
 const basic = (u: string, p: string) => ({
@@ -124,13 +124,6 @@ function Workspace({
   setSession: (s: Session | null) => void;
 }) {
   const user = session.u;
-  const setUser = (u: string) =>
-    setSession({
-      u,
-      p: users[u as keyof typeof users],
-      name: u,
-      role: "",
-    });
   const [view, setView] = useState<View>("home"),
     [data, setData] = useState<Record<string, any[]>>({}),
     [dash, setDash] = useState<Row>({}),
@@ -264,24 +257,11 @@ function Workspace({
             </div>
           </div>
           <div className="user-mini">
-            <span>{user.slice(0, 1).toUpperCase()}</span>
+            <span>{session.name.slice(0, 1).toUpperCase()}</span>
             <div>
-              <b>{user.replace("_", " ")}</b>
-              <small>● conectado</small>
+              <b>{session.name}</b>
+              <small>● {roleNames[session.role] || session.role}</small>
             </div>
-            <select
-              value={user}
-              onChange={(e) => setUser(e.target.value)}
-              aria-label="Usuário"
-            >
-              <option value="partner">Sócia</option>
-              <option value="lawyer">Advogado</option>
-              <option value="accountant">Contadora</option>
-              <option value="assistant">Assistente</option>
-              <option value="alfa_admin">Cliente Alfa</option>
-              <option value="beta_viewer">Cliente Beta</option>
-              <option value="auditor">Auditoria</option>
-            </select>
           </div>
         </div>
       </aside>
@@ -312,13 +292,20 @@ function Workspace({
             </form>
             <button className="round">♧</button>
             <button className="round">◌</button>
-            <span className="top-avatar">{user.slice(0, 1).toUpperCase()}</span>
+            <span className="top-avatar">
+              {session.name.slice(0, 1).toUpperCase()}
+            </span>
           </div>
         </header>
         {loading ? (
           <div className="loading">Preparando seu workspace...</div>
         ) : view === "home" ? (
-          <Home dash={dash} data={data} goto={setView} />
+          <Home
+            dash={dash}
+            data={data}
+            goto={setView}
+            name={session.name.split(" ")[0]}
+          />
         ) : (
           <Module view={view} data={data} goto={setView} notice={setNotice} />
         )}
@@ -358,10 +345,12 @@ function Home({
   dash,
   data,
   goto,
+  name,
 }: {
   dash: Row;
   data: Record<string, any[]>;
   goto: (v: View) => void;
+  name: string;
 }) {
   const matters = data.matters || [],
     obligations = data.obligations || [],
@@ -372,7 +361,7 @@ function Home({
         <div>
           <span className="eyebrow">TERÇA-FEIRA, 11 NOV 2026</span>
           <h2>
-            Bom dia, Marina <span>✦</span>
+            Bom dia, {name} <span>✦</span>
           </h2>
           <p>Veja o que precisa da sua atenção hoje.</p>
         </div>

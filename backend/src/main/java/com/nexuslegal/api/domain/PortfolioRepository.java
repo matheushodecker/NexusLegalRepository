@@ -3,6 +3,8 @@ package com.nexuslegal.api.domain;
 import java.util.*;
 
 public interface PortfolioRepository {
+    Map<String, Object> user(String username);
+
     Map<String, Object> dashboard();
 
     List<Map<String, Object>> companies();

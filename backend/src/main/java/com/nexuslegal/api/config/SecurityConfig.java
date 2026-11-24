@@ -26,7 +26,12 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain chain(HttpSecurity http) throws Exception {
-        http.csrf(c -> c.disable()).cors(Customizer.withDefaults()).httpBasic(Customizer.withDefaults())
+        http.csrf(c -> c.disable()).cors(Customizer.withDefaults())
+                .httpBasic(b -> b.authenticationEntryPoint((req, res, ex) -> {
+                    res.setStatus(401);
+                    res.setContentType("application/json");
+                    res.getWriter().write("{\"error\":\"Não autenticado\"}");
+                }))
                 .authorizeHttpRequests(a -> a.requestMatchers("/", "/api", "/swagger-ui/**", "/v3/api-docs/**",
                         "/api/lab/**", "/api/debug/**").permitAll().anyRequest().authenticated());
         return http.build();

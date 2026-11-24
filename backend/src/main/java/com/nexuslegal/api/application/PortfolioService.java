@@ -12,6 +12,10 @@ public class PortfolioService {
         this.repo = repo;
     }
 
+    public Map<String, Object> me(String username) {
+        return repo.user(username);
+    }
+
     public Map<String, Object> dashboard() {
         return repo.dashboard();
     }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 type View =
   | "home"
   | "clients"
@@ -18,8 +18,9 @@ const users = {
   beta_viewer: "beta123",
   auditor: "auditor123",
 };
-const auth = (u: string) => ({
-  Authorization: `Basic ${btoa(`${u}:${users[u as keyof typeof users]}`)}`,
+type Session = { u: string; p: string; name: string; role: string };
+const basic = (u: string, p: string) => ({
+  Authorization: `Basic ${btoa(unescape(encodeURIComponent(`${u}:${p}`)))}`,
 });
 const money = (v: number) =>
   new Intl.NumberFormat("pt-BR", {
@@ -35,14 +36,108 @@ const date = (v: string) =>
       })
     : "—";
 export default function App() {
-  const [user, setUser] = useState("partner"),
-    [view, setView] = useState<View>("home"),
+  const [session, setSession] = useState<Session | null>(null);
+  if (!session) return <Login onLogin={setSession} />;
+  return <Workspace session={session} setSession={setSession} />;
+}
+function Login({ onLogin }: { onLogin: (s: Session) => void }) {
+  const [u, setU] = useState(""),
+    [p, setP] = useState(""),
+    [error, setError] = useState(""),
+    [busy, setBusy] = useState(false);
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setError("");
+    if (!u.trim() || !p) {
+      setError("Informe usuário e senha.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = await fetch("/api/me", { headers: basic(u.trim(), p) });
+      if (r.ok) {
+        const me = await r.json();
+        onLogin({ u: u.trim(), p, name: me.full_name, role: me.role });
+        return;
+      }
+      setError(
+        r.status === 401
+          ? "Usuário ou senha inválidos."
+          : "Não foi possível entrar agora. Tente de novo.",
+      );
+    } catch {
+      setError("Não foi possível entrar agora. Tente de novo.");
+    } finally {
+      setBusy(false);
+      setP("");
+    }
+  }
+  return (
+    <div className="login-page">
+      <form className="login-card" onSubmit={submit}>
+        <div className="brand">
+          <span className="brand-mark">✦</span>
+          <div>
+            <b>
+              Nexus<span>Legal</span>
+            </b>
+            <small>OFFICE PLATFORM</small>
+          </div>
+        </div>
+        <h1>Entrar</h1>
+        <p>Use o usuário e a senha fornecidos pelo escritório.</p>
+        <label>
+          Usuário
+          <input
+            value={u}
+            onChange={(e) => setU(e.target.value)}
+            autoComplete="username"
+            autoFocus
+          />
+        </label>
+        <label>
+          Senha
+          <input
+            type="password"
+            value={p}
+            onChange={(e) => setP(e.target.value)}
+            autoComplete="current-password"
+          />
+        </label>
+        {error && (
+          <div className="login-error" role="alert">
+            {error}
+          </div>
+        )}
+        <button className="primary" disabled={busy}>
+          {busy ? "Entrando..." : "Entrar"}
+        </button>
+      </form>
+    </div>
+  );
+}
+function Workspace({
+  session,
+  setSession,
+}: {
+  session: Session;
+  setSession: (s: Session | null) => void;
+}) {
+  const user = session.u;
+  const setUser = (u: string) =>
+    setSession({
+      u,
+      p: users[u as keyof typeof users],
+      name: u,
+      role: "",
+    });
+  const [view, setView] = useState<View>("home"),
     [data, setData] = useState<Record<string, any[]>>({}),
     [dash, setDash] = useState<Row>({}),
     [loading, setLoading] = useState(true),
     [query, setQuery] = useState(""),
     [notice, setNotice] = useState("");
-  const headers = auth(user);
+  const headers = basic(session.u, session.p);
   const names: Record<View, string> = {
     home: "Visão geral",
     clients: "Empresas clientes",

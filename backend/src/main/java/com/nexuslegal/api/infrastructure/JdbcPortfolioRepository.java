@@ -13,6 +13,10 @@ public class JdbcPortfolioRepository implements PortfolioRepository {
         this.jdbc = jdbc;
     }
 
+    public Map<String, Object> user(String username) {
+        return jdbc.queryForMap("SELECT username,full_name,role FROM users WHERE username=?", username);
+    }
+
     public Map<String, Object> dashboard() {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("companies", jdbc.queryForObject("SELECT count(*) FROM companies", Long.class));

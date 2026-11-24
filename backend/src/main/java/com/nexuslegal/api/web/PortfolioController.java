@@ -24,6 +24,11 @@ public class PortfolioController {
             @NotBlank String content) {
     }
 
+    @GetMapping("/me")
+    public Map<String, Object> me(Authentication auth) {
+        return service.me(auth.getName());
+    }
+
     @GetMapping("/dashboard")
     public Map<String, Object> dashboard() {
         return service.dashboard();

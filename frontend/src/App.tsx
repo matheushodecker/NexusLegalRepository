@@ -7,7 +7,8 @@ type View =
   | "documents"
   | "tasks"
   | "audit"
-  | "access";
+  | "access"
+  | "search";
 type Row = Record<string, any>;
 const roleNames: Record<string, string> = {
   PARTNER: "Sócia administradora",
@@ -148,7 +149,9 @@ function Workspace({
     tasks: "Agenda e tarefas",
     audit: "Trilha de auditoria",
     access: "Usuários e acessos",
+    search: "Resultados da busca",
   };
+  const [searched, setSearched] = useState("");
   async function load() {
     setLoading(true);
     const endpoints = [
@@ -174,13 +177,19 @@ function Workspace({
     void load();
   }, [user]);
   async function search() {
-    const r = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
+    const term = query.trim();
+    if (!term) {
+      setNotice("Digite um nome ou CNPJ para buscar.");
+      return;
+    }
+    const r = await fetch(`/api/search?q=${encodeURIComponent(term)}`, {
       headers,
     });
     if (r.ok) {
+      setNotice("");
       setData({ ...data, search: await r.json() });
-      setView("clients");
-      setNotice("Busca concluída");
+      setSearched(term);
+      setView("search");
     }
   }
   const page = names[view];
@@ -320,6 +329,8 @@ function Workspace({
             <h3>Acesso não permitido</h3>
             <p>O seu perfil não tem permissão para abrir esta tela.</p>
           </section>
+        ) : view === "search" ? (
+          <SearchResults term={searched} rows={data.search || []} />
         ) : view === "home" ? (
           <Home
             dash={dash}
@@ -754,6 +765,57 @@ function Module({
           </table>
         </div>
       </section>
+    </section>
+  );
+}
+function SearchResults({ term, rows }: { term: string; rows: Row[] }) {
+  return (
+    <section className="module">
+      <div className="module-head">
+        <div>
+          <span className="eyebrow">BUSCA</span>
+          <h2>
+            {rows.length === 0
+              ? `Nenhum resultado encontrado para "${term}"`
+              : `${rows.length} ${rows.length === 1 ? "resultado" : "resultados"} para "${term}"`}
+          </h2>
+          <p>
+            {rows.length === 0
+              ? "Confira a grafia ou busque por outro nome ou CNPJ."
+              : "Empresas e pessoas físicas cujo nome ou documento contém o termo."}
+          </p>
+        </div>
+      </div>
+      {rows.length > 0 && (
+        <section className="panel table-panel">
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Documento</th>
+                  <th>Tipo</th>
+                  <th>Situação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r, i) => (
+                  <tr key={i}>
+                    <td>
+                      <b className="link">{r.name}</b>
+                    </td>
+                    <td>{r.tax_id || "—"}</td>
+                    <td>{r.segment}</td>
+                    <td>
+                      <Status value={r.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
     </section>
   );
 }

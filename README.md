@@ -27,6 +27,27 @@ O relatório completo, com procedimento, evidências, consequências e prioridad
 
 Todas as versões foram testadas no Docker com o banco zerado: cada uma passou nos testes da própria correção e das anteriores.
 
+### Pontos conhecidos ainda não corrigidos
+
+Encontrados na revisão do código depois das correções. Ficaram para uma próxima etapa; nenhum deles permite acessar ou alterar dados sem login.
+
+Relevantes:
+
+| Ponto | Risco | Correção sugerida |
+|---|---|---|
+| Não há limite de tentativas de senha | Alguém pode testar senhas até acertar (força bruta) | Bloquear a conta por alguns minutos depois de 5 tentativas erradas |
+| Ações não são registradas na auditoria | Mudar status de processo ou cadastrar documento não deixa histórico; os eventos da trilha são só dados de exemplo | Gravar login, cadastro de documento e mudança de status com usuário e data |
+| Equipe vê todos os módulos | Advogado, Contadora e Assistente veem todos os clientes, processos e obrigações | Limitar cada perfil ao próprio módulo (ex.: Advogado só os processos dele) |
+| Aplicação usa o usuário administrador do banco (`postgres`) | Uma falha na aplicação daria controle total do banco | Usar o `nexuslegal_app` só com as permissões necessárias |
+| Senhas sem criptografia no código do servidor (`{noop}`) | Quem lê o código descobre todas as senhas | Guardar só o hash (BCrypt) |
+
+Baixa prioridade:
+
+- A tela "Usuários e acessos" é uma lista fixa no código, e alguns números do painel ("+12%", "3 vencem esta semana") são textos fixos.
+- O servidor aceita requisições de qualquer site (CORS aberto) e a documentação da API (Swagger) abre sem login.
+- Não há HTTPS; só importa se o sistema for publicado fora do `localhost`.
+- O serviço `notifications` não foi analisado.
+
 ## Executar
 
 Na raiz do projeto:

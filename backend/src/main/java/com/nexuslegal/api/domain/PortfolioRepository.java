@@ -5,15 +5,17 @@ import java.util.*;
 public interface PortfolioRepository {
     Map<String, Object> user(String username);
 
-    Map<String, Object> dashboard();
+    List<Long> companiesOf(String username);
 
-    List<Map<String, Object>> companies();
+    Map<String, Object> dashboard(List<Long> companyIds);
 
-    List<Map<String, Object>> matters();
+    List<Map<String, Object>> companies(List<Long> companyIds);
 
-    List<Map<String, Object>> obligations();
+    List<Map<String, Object>> matters(List<Long> companyIds);
 
-    List<Map<String, Object>> documents();
+    List<Map<String, Object>> obligations(List<Long> companyIds);
+
+    List<Map<String, Object>> documents(List<Long> companyIds);
 
     List<Map<String, Object>> tasks();
 

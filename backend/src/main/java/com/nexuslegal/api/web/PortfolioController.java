@@ -30,23 +30,23 @@ public class PortfolioController {
     }
 
     @GetMapping("/dashboard")
-    public Map<String, Object> dashboard() {
-        return service.dashboard();
+    public Map<String, Object> dashboard(Authentication auth) {
+        return service.dashboard(auth);
     }
 
     @GetMapping("/companies")
-    public List<Map<String, Object>> companies() {
-        return service.companies();
+    public List<Map<String, Object>> companies(Authentication auth) {
+        return service.companies(auth);
     }
 
     @GetMapping("/companies/{id}")
-    public Map<String, Object> company(@PathVariable long id) {
-        return service.company(id);
+    public Map<String, Object> company(@PathVariable long id, Authentication auth) {
+        return service.company(id, auth);
     }
 
     @GetMapping("/matters")
-    public List<Map<String, Object>> matters() {
-        return service.matters();
+    public List<Map<String, Object>> matters(Authentication auth) {
+        return service.matters(auth);
     }
 
     @PutMapping("/matters/{id}/status")
@@ -56,13 +56,13 @@ public class PortfolioController {
     }
 
     @GetMapping("/obligations")
-    public List<Map<String, Object>> obligations() {
-        return service.obligations();
+    public List<Map<String, Object>> obligations(Authentication auth) {
+        return service.obligations(auth);
     }
 
     @GetMapping("/documents")
-    public List<Map<String, Object>> documents() {
-        return service.documents();
+    public List<Map<String, Object>> documents(Authentication auth) {
+        return service.documents(auth);
     }
 
     @PostMapping("/documents")
@@ -73,8 +73,8 @@ public class PortfolioController {
     }
 
     @GetMapping("/tasks")
-    public List<Map<String, Object>> tasks() {
-        return service.tasks();
+    public List<Map<String, Object>> tasks(Authentication auth) {
+        return service.tasks(auth);
     }
 
     @GetMapping("/audit")
@@ -83,7 +83,7 @@ public class PortfolioController {
     }
 
     @GetMapping("/search")
-    public List<Map<String, Object>> search(@RequestParam String q) {
-        return service.search(q);
+    public List<Map<String, Object>> search(@RequestParam String q, Authentication auth) {
+        return service.search(q, auth);
     }
 }

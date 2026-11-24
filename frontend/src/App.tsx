@@ -45,10 +45,35 @@ const date = (v: string) =>
     : "—";
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
-  if (!session) return <Login onLogin={setSession} />;
-  return <Workspace session={session} setSession={setSession} />;
+  const [message, setMessage] = useState("");
+  if (!session)
+    return (
+      <Login
+        message={message}
+        onLogin={(s) => {
+          setMessage("");
+          setSession(s);
+        }}
+      />
+    );
+  return (
+    <Workspace
+      session={session}
+      logout={(reason) => {
+        setMessage(reason);
+        setSession(null);
+      }}
+    />
+  );
 }
-function Login({ onLogin }: { onLogin: (s: Session) => void }) {
+const IDLE_MS = 15 * 60 * 1000;
+function Login({
+  onLogin,
+  message,
+}: {
+  onLogin: (s: Session) => void;
+  message: string;
+}) {
   const [u, setU] = useState(""),
     [p, setP] = useState(""),
     [error, setError] = useState(""),
@@ -94,6 +119,11 @@ function Login({ onLogin }: { onLogin: (s: Session) => void }) {
         </div>
         <h1>Entrar</h1>
         <p>Use o usuário e a senha fornecidos pelo escritório.</p>
+        {message && (
+          <div className="login-info" role="status">
+            {message}
+          </div>
+        )}
         <label>
           Usuário
           <input
@@ -126,13 +156,29 @@ function Login({ onLogin }: { onLogin: (s: Session) => void }) {
 }
 function Workspace({
   session,
-  setSession,
+  logout,
 }: {
   session: Session;
-  setSession: (s: Session | null) => void;
+  logout: (reason: string) => void;
 }) {
   const user = session.u,
     role = session.role;
+  useEffect(() => {
+    let timer = window.setTimeout(expire, IDLE_MS);
+    function expire() {
+      logout("Sua sessão foi encerrada por inatividade. Entre de novo.");
+    }
+    function activity() {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(expire, IDLE_MS);
+    }
+    const events = ["mousemove", "mousedown", "keydown", "scroll", "touchstart"];
+    events.forEach((e) => window.addEventListener(e, activity, { passive: true }));
+    return () => {
+      window.clearTimeout(timer);
+      events.forEach((e) => window.removeEventListener(e, activity));
+    };
+  }, []);
   const [view, setView] = useState<View>("home"),
     [data, setData] = useState<Record<string, any[]>>({}),
     [dash, setDash] = useState<Row>({}),
@@ -288,6 +334,12 @@ function Workspace({
               <small>● {roleNames[session.role] || session.role}</small>
             </div>
           </div>
+          <button
+            className="logout"
+            onClick={() => logout("Você saiu do sistema.")}
+          >
+            ⎋ Sair
+          </button>
         </div>
       </aside>
       <main className="main">

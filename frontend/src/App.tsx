@@ -315,8 +315,12 @@ function Workspace({
                 placeholder="Buscar empresas, processos..."
               />
             </form>
-            <button className="round">♧</button>
-            <button className="round">◌</button>
+            <button className="round" disabled title="Em breve">
+              ♧
+            </button>
+            <button className="round" disabled title="Em breve">
+              ◌
+            </button>
             <span className="top-avatar">
               {session.name.slice(0, 1).toUpperCase()}
             </span>
@@ -339,7 +343,15 @@ function Workspace({
             name={session.name.split(" ")[0]}
           />
         ) : (
-          <Module view={view} data={data} goto={setView} notice={setNotice} />
+          <Module
+            key={view}
+            view={view}
+            data={data}
+            notice={setNotice}
+            headers={headers}
+            role={role}
+            reload={load}
+          />
         )}
       </main>
       {notice && (
@@ -608,14 +620,20 @@ function Status({ value }: { value: string }) {
 function Module({
   view,
   data,
-  goto,
   notice,
+  headers,
+  role,
+  reload,
 }: {
   view: View;
   data: Record<string, any[]>;
-  goto: (v: View) => void;
   notice: (s: string) => void;
+  headers: Record<string, string>;
+  role: string;
+  reload: () => Promise<void>;
 }) {
+  const [filter, setFilter] = useState<"all" | "ACTIVE" | "PENDING">("all");
+  const [adding, setAdding] = useState(false);
   const configs: any = {
     clients: {
       eyebrow: "CARTEIRA DE CLIENTES",
@@ -696,34 +714,86 @@ function Module({
       cols: [],
     },
   };
+  if (view === "access") return <Access />;
   const c = configs[view];
-  const rows = data[c.key] || [];
-  if (view === "access") return <Access notice={notice} />;
+  const all: Row[] = data[c.key] || [];
+  const rows = filter === "all" ? all : all.filter((r) => r.status === filter);
+  const count = (s: string) => all.filter((r) => r.status === s).length;
+  const canAdd =
+    view === "documents" && !isClient(role) && role !== "AUDITOR";
+  function exportCsv() {
+    const esc = (v: any) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const lines = [
+      c.cols.map((x: any) => esc(x[1])).join(";"),
+      ...rows.map((r) => c.cols.map((x: any) => esc(r[x[0]])).join(";")),
+    ];
+    const blob = new Blob(["﻿" + lines.join("\r\n")], {
+      type: "text/csv;charset=utf-8",
+    });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `nexuslegal-${view}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    notice(`Arquivo nexuslegal-${view}.csv gerado com ${rows.length} linhas.`);
+  }
   return (
     <section className="module">
       <div className="module-head">
         <div>
           <span className="eyebrow">{c.eyebrow}</span>
           <h2>{c.title}</h2>
-          <p>{rows.length} registros sincronizados com o workspace</p>
+          <p>{all.length} registros sincronizados com o workspace</p>
         </div>
-        <button
-          className="primary"
-          onClick={() =>
-            notice("Fluxo iniciado. Revise os dados antes de confirmar.")
-          }
-        >
-          ＋ Adicionar
-        </button>
+        {canAdd ? (
+          <button className="primary" onClick={() => setAdding(true)}>
+            ＋ Adicionar
+          </button>
+        ) : (
+          <button
+            className="primary"
+            disabled
+            title="Cadastro não disponível nesta tela para o seu perfil"
+          >
+            ＋ Adicionar
+          </button>
+        )}
       </div>
+      {adding && (
+        <DocumentForm
+          companies={data.companies || []}
+          headers={headers}
+          onCancel={() => setAdding(false)}
+          onDone={async (title) => {
+            setAdding(false);
+            await reload();
+            notice(`Documento "${title}" cadastrado.`);
+          }}
+        />
+      )}
       <div className="filter-strip">
-        <button className="filter active">
-          Todos <b>{rows.length}</b>
+        <button
+          className={`filter ${filter === "all" ? "active" : ""}`}
+          onClick={() => setFilter("all")}
+        >
+          Todos <b>{all.length}</b>
         </button>
-        <button className="filter">Ativos</button>
-        <button className="filter">Pendentes</button>
+        <button
+          className={`filter ${filter === "ACTIVE" ? "active" : ""}`}
+          onClick={() => setFilter("ACTIVE")}
+        >
+          Ativos <b>{count("ACTIVE")}</b>
+        </button>
+        <button
+          className={`filter ${filter === "PENDING" ? "active" : ""}`}
+          onClick={() => setFilter("PENDING")}
+        >
+          Pendentes <b>{count("PENDING")}</b>
+        </button>
         <span className="filter-spacer" />
-        <button className="outline">Exportar</button>
+        <button className="outline" onClick={exportCsv} disabled={!rows.length}>
+          Exportar
+        </button>
       </div>
       <section className="panel table-panel">
         <div className="table-wrap">
@@ -757,7 +827,13 @@ function Module({
                     </td>
                   ))}
                   <td>
-                    <button className="more">•••</button>
+                    <button
+                      className="more"
+                      disabled
+                      title="Nenhuma ação disponível para este registro"
+                    >
+                      •••
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -765,6 +841,134 @@ function Module({
           </table>
         </div>
       </section>
+    </section>
+  );
+}
+function DocumentForm({
+  companies,
+  headers,
+  onCancel,
+  onDone,
+}: {
+  companies: Row[];
+  headers: Record<string, string>;
+  onCancel: () => void;
+  onDone: (title: string) => Promise<void>;
+}) {
+  const [f, setF] = useState({
+    companyId: "",
+    title: "",
+    category: "",
+    content: "",
+  });
+  const [step, setStep] = useState<"edit" | "review">("edit");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const company = companies.find((c) => String(c.id) === f.companyId);
+  const set = (k: keyof typeof f) => (e: { target: { value: string } }) =>
+    setF({ ...f, [k]: e.target.value });
+  function review(e: FormEvent) {
+    e.preventDefault();
+    if (!f.companyId || !f.title.trim() || !f.category.trim() || !f.content.trim()) {
+      setError("Preencha empresa, título, categoria e conteúdo.");
+      return;
+    }
+    setError("");
+    setStep("review");
+  }
+  async function confirm() {
+    setBusy(true);
+    try {
+      const r = await fetch("/api/documents", {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          companyId: Number(f.companyId),
+          title: f.title.trim(),
+          category: f.category.trim(),
+          content: f.content.trim(),
+        }),
+      });
+      if (r.status === 201) return await onDone(f.title.trim());
+      setError(
+        r.status === 403
+          ? "Seu perfil não pode cadastrar documentos."
+          : "Não foi possível cadastrar agora. Nada foi salvo.",
+      );
+      setStep("edit");
+    } catch {
+      setError("Não foi possível cadastrar agora. Nada foi salvo.");
+      setStep("edit");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <section className="panel form-panel">
+      {step === "edit" ? (
+        <form onSubmit={review}>
+          <h3>Novo documento</h3>
+          <label>
+            Empresa
+            <select value={f.companyId} onChange={set("companyId")}>
+              <option value="">Selecione...</option>
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Título
+            <input value={f.title} onChange={set("title")} maxLength={220} />
+          </label>
+          <label>
+            Categoria
+            <input value={f.category} onChange={set("category")} maxLength={70} />
+          </label>
+          <label>
+            Conteúdo
+            <textarea value={f.content} onChange={set("content")} rows={3} />
+          </label>
+          {error && <div className="login-error">{error}</div>}
+          <div className="form-actions">
+            <button type="button" className="outline" onClick={onCancel}>
+              Cancelar
+            </button>
+            <button className="primary">Revisar</button>
+          </div>
+        </form>
+      ) : (
+        <div>
+          <h3>Confira antes de confirmar</h3>
+          <dl>
+            <dt>Empresa</dt>
+            <dd>{company?.name}</dd>
+            <dt>Título</dt>
+            <dd>{f.title}</dd>
+            <dt>Categoria</dt>
+            <dd>{f.category}</dd>
+            <dt>Conteúdo</dt>
+            <dd>{f.content}</dd>
+          </dl>
+          <p>
+            O documento ficará visível para a equipe do escritório e para os
+            usuários da empresa selecionada.
+          </p>
+          <div className="form-actions">
+            <button className="outline" onClick={() => setStep("edit")}>
+              Voltar e editar
+            </button>
+            <button className="outline" onClick={onCancel}>
+              Cancelar
+            </button>
+            <button className="primary" onClick={confirm} disabled={busy}>
+              {busy ? "Salvando..." : "Confirmar cadastro"}
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -819,7 +1023,7 @@ function SearchResults({ term, rows }: { term: string; rows: Row[] }) {
     </section>
   );
 }
-function Access({ notice }: { notice: (s: string) => void }) {
+function Access() {
   const roles = [
     [
       "Marina Albuquerque",
@@ -849,11 +1053,16 @@ function Access({ notice }: { notice: (s: string) => void }) {
         </div>
         <button
           className="primary"
-          onClick={() => notice("Convite criado para revisão.")}
+          disabled
+          title="Convites ainda não estão disponíveis: nenhum convite é criado ou enviado"
         >
           ＋ Convidar usuário
         </button>
       </div>
+      <p className="soon-note">
+        Convidar usuários e alterar acessos ainda não está disponível nesta
+        versão. Nenhum convite é criado ou enviado por esta tela.
+      </p>
       <div className="access-note">
         <span>♧</span>
         <div>
@@ -863,11 +1072,7 @@ function Access({ notice }: { notice: (s: string) => void }) {
             controle.
           </p>
         </div>
-        <button
-          onClick={() =>
-            notice("A matriz detalhada está disponível para revisão.")
-          }
-        >
+        <button disabled title="Em breve">
           Ver política →
         </button>
       </div>
@@ -905,7 +1110,9 @@ function Access({ notice }: { notice: (s: string) => void }) {
                     <span className="status active">Ativo</span>
                   </td>
                   <td>
-                    <button className="more">•••</button>
+                    <button className="more" disabled title="Em breve">
+                      •••
+                    </button>
                   </td>
                 </tr>
               ))}

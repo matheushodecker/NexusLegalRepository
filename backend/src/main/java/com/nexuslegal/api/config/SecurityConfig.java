@@ -39,7 +39,7 @@ public class SecurityConfig {
                     res.getWriter().write("{\"error\":\"Acesso não permitido\"}");
                 }))
                 .authorizeHttpRequests(a -> a.requestMatchers("/", "/api", "/error", "/swagger-ui/**",
-                        "/v3/api-docs/**", "/api/lab/**", "/api/debug/**").permitAll()
+                        "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/audit").hasAnyRole("PARTNER", "AUDITOR")
                         .requestMatchers(HttpMethod.PUT, "/api/matters/**").hasAnyRole("PARTNER", "LAWYER")
                         .requestMatchers(HttpMethod.POST, "/api/documents")
